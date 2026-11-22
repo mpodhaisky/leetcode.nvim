@@ -274,6 +274,43 @@ function cmd.random_by_status(opts, statuses, free_only)
     return nil, err
 end
 
+---@param mode "open"|"virtual"
+local function contest_picker(mode)
+    require("leetcode.utils").auth_guard()
+    if config.is_cn then
+        return log.warn("Contests are only supported on leetcode.com")
+    end
+
+    local contest_api = require("leetcode.api.contest")
+    local contests, err = contest_api.all()
+    if not contests then
+        return log.err(err)
+    end
+
+    require("leetcode.picker").contest(contests, contest_api.attended(), mode)
+end
+
+---Pick a contest and open all of its questions in tabs.
+function cmd.contest()
+    contest_picker("open")
+end
+
+---Resume the running virtual contest, or pick one to start.
+function cmd.contest_virtual()
+    require("leetcode.utils").auth_guard()
+    if not require("leetcode.contest").resume() then
+        contest_picker("virtual")
+    end
+end
+
+function cmd.contest_status()
+    require("leetcode.contest").status()
+end
+
+function cmd.contest_stop()
+    require("leetcode.contest").stop()
+end
+
 function cmd.start_with_cmd()
     local leetcode = require("leetcode")
     if leetcode.start(false) then
@@ -312,6 +349,9 @@ end
 function cmd.start_user_session() --
     cmd.set_menu_page("menu")
     config.stats.update()
+    if not config.is_cn then
+        require("leetcode.contest").notify_running()
+    end
 end
 
 function cmd.question_tabs()
@@ -756,6 +796,13 @@ cmd.commands = {
     },
     cache = {
         update = { cmd.cache_update },
+    },
+    contest = {
+        cmd.contest,
+
+        virtual = { cmd.contest_virtual },
+        status = { cmd.contest_status },
+        stop = { cmd.contest_stop },
     },
     fix = {
         cmd.fix,

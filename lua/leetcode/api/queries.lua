@@ -179,4 +179,38 @@ queries.session_progress = [[
         }
     ]]
 
+queries.contests = [[
+        query allContests {
+            contests: allContests {
+                title
+                title_slug: titleSlug
+                start_time: startTime
+                duration
+            }
+        }
+    ]]
+
+queries.contest_questions = [[
+        query contestQuestionList($contestSlug: String!) {
+            questions: contestQuestionList(contestSlug: $contestSlug) {
+                title
+                title_slug: titleSlug
+                credit
+                id: questionId
+                is_ac: isAc
+            }
+        }
+    ]]
+
+queries.contest_history = [[
+        query userContestRankingHistory($username: String!) {
+            history: userContestRankingHistory(username: $username) {
+                attended
+                contest {
+                    title_slug: titleSlug
+                }
+            }
+        }
+    ]]
+
 return queries

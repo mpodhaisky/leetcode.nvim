@@ -26,6 +26,7 @@ function ResultPopup:handle(item)
         if status == "ac" then
             config.stats.update_streak()
         end
+        require("leetcode.contest").on_submission(self.console.question.q.title_slug, item)
     end
 
     self:draw()

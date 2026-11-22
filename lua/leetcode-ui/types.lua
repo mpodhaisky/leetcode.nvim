@@ -27,6 +27,7 @@
 ---@alias lc-menu.page
 ---| "menu"
 ---| "problems"
+---| "contests"
 ---| "stats"
 ---| "cookie"
 ---| "cache"

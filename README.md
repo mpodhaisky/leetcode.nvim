@@ -405,6 +405,15 @@ image_support = true,
 - `cache`
   - `update` fetches all available problems and updates the local cache of [leetcode.nvim]
 
+- `contest` opens a picker with all contests and opens every question of the
+  selected one in its own tab (in contest order)
+
+  - `virtual` starts a virtual contest (or reopens the running one)
+
+  - `status` shows the scoreboard of the current or last virtual contest
+
+  - `stop` ends the running virtual contest early
+
 #### Some commands can take optional arguments. To stack argument values separate them by a `,`
 
 - `Leet list`
@@ -421,6 +430,32 @@ image_support = true,
 
 `<status>` is `ac` (solved), `tried` (attempted, never solved) or `todo` (not started).
 Prefix it with `!` to negate: `status=!ac` matches every unsolved question.
+
+### Contests
+
+`Leet contest` (or **Contests** in the menu) lists upcoming and past contests.
+Contests you took part in are marked with a check. Selecting a past contest
+opens all of its questions side by side in tabs. A bar at the top of each
+question shows the contest, `Q1`..`Q4` with their status and the question's points.
+
+`Leet contest virtual` runs a past contest as a virtual contest:
+
+- all questions open in tabs, code from earlier attempts is reset to the
+  default snippet (undo with `u`)
+- the bar shows your points and the time left; the clock keeps running when
+  Neovim is closed, and `Leet contest virtual` reopens the contest
+- submissions are scored like a real contest: the points of each accepted
+  question, and a finish time of the last accepted submission plus 5 minutes
+  for every rejected submission of an accepted question (compile errors are
+  not penalised)
+- when the time is up, or all questions are solved, a summary is shown; run
+  `Leet contest status` to see it again
+
+> [!NOTE]
+> Virtual contests are tracked locally. They don't count as a virtual
+> participation on leetcode.com and there is no rank estimate, because those
+> endpoints aren't accessible to [leetcode.nvim]. Contests are not supported
+> on leetcode.cn.
 
 ## 🚀 Usage
 

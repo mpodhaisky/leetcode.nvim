@@ -24,6 +24,15 @@ local problems = Button("Problems", {
     expandable = true,
 })
 
+local contests = Button("Contests", {
+    icon = "󰔟",
+    sc = "o",
+    on_press = function()
+        cmd.set_menu_page("contests")
+    end,
+    expandable = true,
+})
+
 local statistics = Button("Statistics", {
     icon = "󰄪",
     sc = "s",
@@ -55,6 +64,7 @@ local exit = ExitButton()
 
 page:insert(Buttons({
     problems,
+    contests,
     statistics,
     cookie,
     cache,

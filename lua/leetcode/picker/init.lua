@@ -123,6 +123,10 @@ function P.question(...)
     P.pick("question", ...)
 end
 
+function P.contest(...)
+    P.pick("contest", ...)
+end
+
 function P.tabs()
     local utils = require("leetcode.utils")
     local tabs = utils.question_tabs()
