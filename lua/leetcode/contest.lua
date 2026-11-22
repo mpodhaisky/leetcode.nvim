@@ -153,8 +153,9 @@ local function esc(s)
 end
 
 ---Winbar for contest question windows.
-function M.winbar()
-    local winid = vim.g.statusline_winid
+---@param winid? integer the window the winbar belongs to
+function M.winbar(winid)
+    winid = winid or vim.g.statusline_winid
     local q
     for _, question in ipairs(_Lc_state.questions) do
         if question.winid == winid then
@@ -171,7 +172,22 @@ function M.winbar()
         return ""
     end
 
-    local parts = { "%#leetcode_header# " .. esc(state.title) .. " %*" }
+    -- most important first: if the window is too narrow, the title gets cut
+    local parts = {}
+
+    if state.virtual then
+        if M.is_running(state) then
+            local left = M.remaining(state)
+            local hl = left < 10 * 60 and "leetcode_error" or "leetcode_ref"
+            table.insert(parts, ("%%#%s#󰔟 %s left%%*"):format(hl, fmt_duration(left)))
+        else
+            table.insert(parts, "%#leetcode_alt#󰔟 ended%*")
+        end
+        local s = M.score(state)
+        table.insert(parts, ("%%#leetcode_info#%d/%d pts%%*"):format(s.points, s.max_points))
+    else
+        table.insert(parts, ("%%#leetcode_alt#%d pts%%*"):format(state.problems[idx].credit))
+    end
 
     for i, p in ipairs(state.problems) do
         local label = "Q" .. i
@@ -192,29 +208,21 @@ function M.winbar()
         table.insert(parts, ("%%#%s#%s%%*"):format(hl, label))
     end
 
-    if state.virtual then
-        local s = M.score(state)
-        table.insert(parts, ("%%#leetcode_info#%d/%d pts%%*"):format(s.points, s.max_points))
-        if M.is_running(state) then
-            local left = M.remaining(state)
-            local hl = left < 10 * 60 and "leetcode_error" or "leetcode_ref"
-            table.insert(parts, ("%%#%s#%s left%%*"):format(hl, fmt_duration(left)))
-        else
-            table.insert(parts, "%#leetcode_alt#ended%*")
-        end
-    else
-        table.insert(parts, ("%%#leetcode_alt#%d pts%%*"):format(state.problems[idx].credit))
+    local bar = " " .. table.concat(parts, "  ")
+    local used = vim.api.nvim_eval_statusline(bar, { winid = winid, maxwidth = 1000 }).width
+    if used + #state.title + 2 <= vim.api.nvim_win_get_width(winid) then
+        bar = bar .. "  %#leetcode_header#" .. esc(state.title) .. "%*"
     end
-
-    return table.concat(parts, "  ")
+    return bar
 end
 
-local WINBAR = "%{%v:lua.require'leetcode.contest'.winbar()%}"
+-- the window id is baked in: `g:statusline_winid` is not reliably set for winbars
+local WINBAR = "%%{%%v:lua.require'leetcode.contest'.winbar(%d)%%}"
 
 ---@param q lc.ui.Question
 local function attach_winbar(q)
     if q.winid and vim.api.nvim_win_is_valid(q.winid) then
-        vim.wo[q.winid].winbar = WINBAR
+        vim.wo[q.winid].winbar = WINBAR:format(q.winid)
     end
 end
 
