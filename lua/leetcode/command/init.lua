@@ -22,8 +22,46 @@ function cmd.cache_update()
 end
 
 ---@param options table<string, string[]>
+-- Question statuses as cached in the problem list.
+local STATUSES = { "ac", "notac", "todo" }
+
+-- Command-line names for the cached statuses. `notac` is exposed as `tried`
+-- (LeetCode's TRIED: attempted, never accepted) because `notac` reads as `!ac`.
+local STATUS_NAMES = { ac = "ac", tried = "notac", todo = "todo" }
+
+---Expand `status=` values into cached statuses, resolving `!<status>` negation.
+---@param values string[]
+---@return string[]|nil statuses, string|nil err
+local function expand_status(values)
+    local result = {}
+    for _, value in ipairs(values) do
+        local negated, name = value:match("^(!?)(.+)$")
+        name = STATUS_NAMES[name]
+        if not name then
+            return nil,
+                ("Invalid status `%s`. Use `ac`, `tried` or `todo`, optionally negated with `!`"):format(
+                    value
+                )
+        end
+        for _, status in ipairs(STATUSES) do
+            if (negated == "!") ~= (status == name) and not vim.tbl_contains(result, status) then
+                table.insert(result, status)
+            end
+        end
+    end
+    return result
+end
+
 function cmd.problems(options)
     require("leetcode.utils").auth_guard()
+
+    if options and options.status then
+        local statuses, err = expand_status(options.status)
+        if not statuses then
+            return log.error(err)
+        end
+        options.status = statuses
+    end
 
     local p = require("leetcode.cache.problemlist").get()
     local picker = require("leetcode.picker")
@@ -145,17 +183,18 @@ function cmd.random_question(opts)
     require("leetcode.utils").auth_guard()
 
     local problems = require("leetcode.cache.problemlist")
-    local question = require("leetcode.api.question")
 
     if opts and opts.difficulty then
         opts.difficulty = opts.difficulty[1]:upper()
     end
+    local statuses
     if opts and opts.status then
-        opts.status = ({
-            ac = "AC",
-            notac = "TRIED",
-            todo = "NOT_STARTED",
-        })[opts.status[1]]
+        local err
+        statuses, err = expand_status(opts.status)
+        if not statuses then
+            return log.error(err)
+        end
+        opts.status = nil
     end
 
     -- `premium=paid` is filtered server-side; `premium=free` is not supported by
@@ -171,7 +210,7 @@ function cmd.random_question(opts)
     local free_only = premium == "free"
         or (premium == nil and not require("leetcode.config").auth.is_premium)
 
-    local q, err = question.random(opts, free_only)
+    local q, err = cmd.random_by_status(opts, statuses, free_only)
     if err then
         return log.err(err)
     end
@@ -179,6 +218,60 @@ function cmd.random_question(opts)
     local item = problems.get_by_title_slug(q.title_slug) or {}
     local Question = require("leetcode-ui.question")
     Question(item):mount()
+end
+
+local API_STATUS = { ac = "AC", notac = "TRIED", todo = "NOT_STARTED" }
+
+---The API filters by a single status. When several are allowed (e.g. `!ac`),
+---pick one weighted by how many matching questions each has in the cached
+---problem list, and fall back to the others if that draw finds nothing.
+---@param opts table
+---@param statuses string[]|nil
+---@param free_only boolean
+function cmd.random_by_status(opts, statuses, free_only)
+    local question = require("leetcode.api.question")
+    if not statuses then
+        return question.random(opts, free_only)
+    end
+
+    local counts = {}
+    for _, p in ipairs(require("leetcode.cache.problemlist").get()) do
+        local matches = (not opts.difficulty or p.difficulty:upper() == opts.difficulty)
+            and not (free_only and p.paid_only)
+        if matches then
+            counts[p.status] = (counts[p.status] or 0) + 1
+        end
+    end
+
+    local candidates = vim.tbl_filter(function(s)
+        return (counts[s] or 0) > 0
+    end, statuses)
+    if vim.tbl_isempty(candidates) then
+        candidates = statuses
+    end
+
+    local q, err
+    while #candidates > 0 do
+        local total = 0
+        for _, s in ipairs(candidates) do
+            total = total + (counts[s] or 1)
+        end
+        local roll, idx = math.random() * total, #candidates
+        for i, s in ipairs(candidates) do
+            roll = roll - (counts[s] or 1)
+            if roll <= 0 then
+                idx = i
+                break
+            end
+        end
+
+        local status = table.remove(candidates, idx)
+        q, err = question.random(vim.tbl_extend("force", opts, { status = API_STATUS[status] }), free_only)
+        if not err then
+            return q
+        end
+    end
+    return nil, err
 end
 
 function cmd.start_with_cmd()

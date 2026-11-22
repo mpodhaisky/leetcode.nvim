@@ -419,6 +419,9 @@ image_support = true,
   Leet random status=<status> difficulty=<difficulty> tags=<tags> premium=<free|paid>
   ```
 
+`<status>` is `ac` (solved), `tried` (attempted, never solved) or `todo` (not started).
+Prefix it with `!` to negate: `status=!ac` matches every unsolved question.
+
 ## 🚀 Usage
 
 This plugin can be initiated in two ways:

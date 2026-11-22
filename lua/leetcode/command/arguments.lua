@@ -76,14 +76,17 @@ local topics = {
     "binary-search",
 }
 
+-- `!<status>` negates: `!ac` matches every question that is not accepted.
+local statuses = { "ac", "tried", "todo", "!ac", "!tried", "!todo" }
+
 arguments.list = {
     difficulty = { "easy", "medium", "hard" },
-    status = { "ac", "notac", "todo" },
+    status = statuses,
 }
 
 arguments.random = {
     difficulty = { "easy", "medium", "hard" },
-    status = { "ac", "notac", "todo" },
+    status = statuses,
     tags = topics,
     premium = { "free", "paid" },
 }
