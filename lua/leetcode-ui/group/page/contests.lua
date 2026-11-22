@@ -16,7 +16,7 @@ page:insert(header)
 page:insert(Title({ "Menu" }, "Contests"))
 
 local list = Button("List", {
-    icon = "",
+    icon = "",
     sc = "o",
     on_press = cmd.contest,
 })
@@ -34,7 +34,7 @@ local status = Button("Status", {
 })
 
 local stop = Button("Stop virtual", {
-    icon = "",
+    icon = "",
     sc = "x",
     on_press = cmd.contest_stop,
 })
