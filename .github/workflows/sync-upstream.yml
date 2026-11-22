@@ -1,0 +1,23 @@
+# Fork-only: keeps master in sync with kawre/leetcode.nvim while keeping
+# local commits on top. Runs daily; if upstream conflicts with the local
+# changes, the run fails and GitHub emails the repo owner.
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge kawre/leetcode.nvim master into master
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/merge-upstream" \
+            -f branch=master --jq '"\(.merge_type): \(.message)"'
